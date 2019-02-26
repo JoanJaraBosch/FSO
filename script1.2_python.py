@@ -26,7 +26,7 @@ def test_perms(tupla, qui, perm):
 		if perm in aux:
 			print("Els altres te permisos de ",perm," en el fitxer ",tupla[1])
 
-def recursiuDirectori(directori):
+def recursiuDirectori(directori, user, perm):
 	tupla=[]
 	fitxers=os.popen('ls -l '+directori).read()
 	fitxers=fitxers.split("\n")
@@ -52,14 +52,14 @@ def recursiuDirectori(directori):
 				auxiliar=dades[0]
 				auxiliar=set(auxiliar[0:4])
 				if "d" in auxiliar:
-					recursiuDirectori(directori+valor+"/")
+					recursiuDirectori(directori+valor+"/", user, perm)
 				else:
 					tupla.append(dades[0])
 					tupla.append(directori+valor)
 		i=i+1
 	i=0
 	while i<len(tupla):
-		test_perms(tupla[i:i+2],"others","x")
+		test_perms(tupla[i:i+2],user,perm)
 		i=i+2
 
 
@@ -69,10 +69,20 @@ if len(sys.argv)== 2:
 	else:
 		directori=sys.argv[1]
 		if os.path.exists(directori):
+			user="joan"
+			perm="cap"
+			while(user!="others" and user!="group" and user!="user"):
+				while(perm!="x" and perm!="w" and perm!="r"):
+					print("Quin permis vols analitzar en els fitxers (x|r|w)?")
+					perm=input()
+					perm=perm.lower()
+					print("Per a qui vols mirar els permisos(user|group|others)?")
+					user=input()
+					user=user.lower()
 			if directori[-1]=="/":
-				recursiuDirectori(directori)
+				recursiuDirectori(directori, user, perm)
 			else:
-				recursiuDirectori(directori+"/")
+				recursiuDirectori(directori+"/", user, perm)
 		else:
 			print("ERROR: El directori no existeix")
 else:
