@@ -1,6 +1,6 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
-# Author: Joan Jara Bosch i Pau Treig Sole
+# Author: Joan Jara Bosch ,Pau Treig Sole i Victor Castillo
 # Date: 25/20/2019
 # Version: 1
 # Parameters: path del directori que analitzarem
@@ -8,59 +8,34 @@
 
 import os
 import sys
+from glob import glob
 
-def test_perms(tupla, qui, perm):
-	if qui=="user":
-		aux=tupla[0]
-		aux=set(aux[0:4])
-		if perm in aux:
-			print("El usuari te permisos de ",perm," en el fitxer ",tupla[1])
-	elif qui=="group":
-		aux=tupla[0]
-		aux=set(aux[4:7])
-		if perm in aux:
-			print("El grup te permisos de ",perm," en el fitxer ",tupla[1])
-	elif qui=="others":
-		aux=tupla[0]
-		aux=set(aux[7:10])
-		if perm in aux:
-			print("Els altres te permisos de ",perm," en el fitxer ",tupla[1])
-
+#Funcio la qual li passem el directori passsat al script i els permis que vol comprovar l'usuari amb el seu propietari ja sigui user|group|others
 def recursiuDirectori(directori, user, perm):
-	tupla=[]
-	fitxers=os.popen('ls -l '+directori).read()
-	fitxers=fitxers.split("\n")
-	i=0
-	for fitxer in fitxers:
-		if i>=1:
-			if fitxer !="":
-				dades=fitxer.replace("  ", " ").replace("  ", " ").replace("  ", " ").split(" ")
-				
-				if len(dades)>9:
-					valor=""
-					j=8
-					while j<len(dades):
-						if j==8:
-							valor=dades[j]
-						elif j<len(dades):
-							valor=valor+" "+dades[j]
-						j=j+1
-					valor=valor.replace("\n","")
-				else:
-					valor=dades[-1].replace("\n","")
+	if perm=="r":
+		permNum=0
+	elif perm=="w":
+		permNum=1
+	else:
+		permNum=2
+	#utilitzem el modul glob amb mode recursiu per trobar tots els fitxers i directoris
+	fitxers=glob(directori+"**", recursive=True)
+	for fitxerDir in fitxers:
+		#utilitzem el os.stat per agafar els permisos del fitxer|directori i el passem a binari
+		permisosF=bin(os.stat(fitxerDir).st_mode & 0o777)
+		if user=="user":
+			permisosF=permisosF[2:5]
+		elif user =="group":
+			permisosF=permisosF[5:8]
+		else:
+			permisosF=permisosF[8:11]
 
-				auxiliar=dades[0]
-				auxiliar=set(auxiliar[0:4])
-				if "d" in auxiliar:
-					recursiuDirectori(directori+valor+"/", user, perm)
-				else:
-					tupla.append(dades[0])
-					tupla.append(directori+valor)
-		i=i+1
-	i=0
-	while i<len(tupla):
-		test_perms(tupla[i:i+2],user,perm)
-		i=i+2
+		if permisosF[permNum]=="1":
+			if os.path.isdir(fitxerDir):
+				print(fitxerDir+"\tDirectori\t"+user+"\t"+perm)
+			else:
+				print(fitxerDir+"\tFitxer\t"+user+"\t"+perm)
+
 
 
 if len(sys.argv)== 2:
@@ -68,7 +43,7 @@ if len(sys.argv)== 2:
 		print("Aquest script necessita un parametre, un path del directori que voldrem analitzar")
 	else:
 		directori=sys.argv[1]
-		if os.path.exists(directori):
+		if os.path.isdir(directori):
 			user="joan"
 			perm="cap"
 			while(user!="others" and user!="group" and user!="user"):
@@ -79,10 +54,7 @@ if len(sys.argv)== 2:
 					print("Per a qui vols mirar els permisos(user|group|others)?")
 					user=input()
 					user=user.lower()
-			if directori[-1]=="/":
-				recursiuDirectori(directori, user, perm)
-			else:
-				recursiuDirectori(directori+"/", user, perm)
+			recursiuDirectori(directori, user, perm)
 		else:
 			print("ERROR: El directori no existeix")
 else:
