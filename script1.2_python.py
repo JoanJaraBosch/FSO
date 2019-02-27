@@ -43,17 +43,20 @@ if len(sys.argv)== 2:
 		print("Aquest script necessita un parametre, un path del directori que voldrem analitzar")
 	else:
 		directori=sys.argv[1]
+		if directori[-1]!="/":
+			directori=directori+"/"
 		if os.path.isdir(directori):
 			user="joan"
 			perm="cap"
 			while(user!="others" and user!="group" and user!="user"):
+				print("Per a qui vols mirar els permisos(user|group|others)?")
+				user=input()
+				user=user.lower()
 				while(perm!="x" and perm!="w" and perm!="r"):
 					print("Quin permis vols analitzar en els fitxers (x|r|w)?")
 					perm=input()
 					perm=perm.lower()
-					print("Per a qui vols mirar els permisos(user|group|others)?")
-					user=input()
-					user=user.lower()
+					
 			recursiuDirectori(directori, user, perm)
 		else:
 			print("ERROR: El directori no existeix")
