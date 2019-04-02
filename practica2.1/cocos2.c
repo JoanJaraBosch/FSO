@@ -3,7 +3,7 @@
 /*				     cocos0.c				     */
 /*									     */
 /*  Programa inicial d'exemple per a les practiques 2 i 3 d'ISO.	     */
-/*     Es tracta del joc del menjacocos: es dibuixara un laberint amb una      */
+/*     Es tracta del joc del menjacocos: es dibuixa un laberint amb una      */
 /*     serie de punts (cocos), els quals han de ser "tragats" pel menja-     */
 /*     cocos. Aquest menjacocos es representara amb el caracter '0', i el    */
 /*     moura l'usuari amb les tecles 'w' (adalt), 's' (abaix), 'd' (dreta)   */
@@ -23,7 +23,7 @@
 /*									     */
 /*     on 'n_fil1', 'n_col' son les dimensions del taulell de joc, mes una   */
 /*     fila pels missatges de text a l'ultima linia. "fit_tauler" es el nom  */
-/*     d'un fitxer de text que contindra el dibuixar del laberint, amb num. de */
+/*     d'un fitxer de text que contindra el dibuix del laberint, amb num. de */
 /*     files igual a 'n_fil1'-1 i num. de columnes igual a 'n_col'. Dins     */
 /*     d'aquest fitxer, hi hauran caracter ASCCII que es representaran en    */
 /*     pantalla tal qual, excepte el caracters iguals a 'creq', que es visua-*/
@@ -68,7 +68,9 @@
 #include <unistd.h>		/* per getpid() */
 #include <pthread.h>
 #include <stdint.h>
+#include <time.h>
 #include "winsuport.h"		/* incloure definicions de funcions propies */
+
 
 
 #define MIN_FIL 7		/* definir limits de variables globals */
@@ -87,11 +89,10 @@ typedef struct {		/* per un objecte (menjacocos o fantasma) */
 
 int n_threads;
 pthread_t t_id[MAX_THREADS];
-objecte taula_obj[MAX_THREADS];
-int fi1 = 0, fi2 = 0;
-pthread_mutex_t dibuixar= PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t variables= PTHREAD_MUTEX_INITIALIZER;
 
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int fi1 = 0, fi2 = 0;
 /* variables globals */
 int n_fil1, n_col;		/* dimensions del camp de joc */
 char tauler[70];		/* nom del fitxer amb el laberint de joc */
@@ -202,20 +203,13 @@ void inicialitza_joc(void)
        if (f1.a == c_req) r = -7;	/* error: fantasma sobre pared */
        else
        {
-
-				 for(i=0; i<n_threads; i++){
-					 taula_obj[i].f=f1.f;
-					 taula_obj[i].c=f1.c;
-					 taula_obj[i].d=f1.d;
-					 taula_obj[i].a=f1.a;
-				 }
 	cocos = 0;			/* compta el numero total de cocos */
 	for (i=0; i<n_fil1-1; i++)
 	  for (j=0; j<n_col; j++)
 	    if (win_quincar(i,j)=='.') cocos++;
 
-        win_escricar(mc.f,mc.c,'0',NO_INV);
-	win_escricar(f1.f,f1.c,'1',NO_INV);
+        win_escricar(mc.f,mc.c,'C',NO_INV);
+	win_escricar(f1.f,f1.c,'0',NO_INV);
 
         if (mc.a == '.') cocos--;	/* menja primer coco */
 
@@ -247,46 +241,46 @@ void inicialitza_joc(void)
 void* mou_fantasma(void * index)
 {
   int k, vk, nd, vd[3];
-	int aux =(intptr_t) index;
-	char valor = '1'+(intptr_t) index;
-  nd = 0;
+	objecte seg, actual;
+	actual.a=f1.a;
+	actual.c=f1.c;
+	actual.f=f1.f;
+	actual.d=f1.d;
 	while (!fi1 && !fi2){
+	nd = 0;
   for (k=-1; k<=1; k++)		/* provar direccio actual i dir. veines */
   {
-    vk = (f1.d + k) % 4;		/* direccio veina */
+    vk = (actual.d + k) % 4;		/* direccio veina */
     if (vk < 0) vk += 4;		/* corregeix negatius */
-    taula_obj[aux].f = f1.f + df[vk]; /* calcular posicio en la nova dir.*/
-    taula_obj[aux].c = f1.c + dc[vk];
-			pthread_mutex_lock(&dibuixar);
-    taula_obj[aux].a = win_quincar(taula_obj[aux].f,taula_obj[aux].c);	/* calcular caracter seguent posicio */
-			pthread_mutex_unlock(&dibuixar);
-    if ((taula_obj[aux].a==' ') || (taula_obj[aux].a=='.') || (taula_obj[aux].a=='0'))
+    seg.f = actual.f + df[vk]; /* calcular posicio en la nova dir.*/
+    seg.c = actual.c + dc[vk];
+		pthread_mutex_lock(&mutex);
+    seg.a = win_quincar(seg.f,seg.c);	/* calcular caracter seguent posicio */
+		pthread_mutex_unlock(&mutex);
+    if ((seg.a==' ') || (seg.a=='.') || (seg.a=='C'))
     { vd[nd] = vk;			/* memoritza com a direccio possible */
       nd++;
     }
   }
   if (nd == 0)				/* si no pot continuar, */
-  	f1.d = (f1.d + 2) % 4;		/* canvia totalment de sentit */
+  	actual.d = (actual.d + 2) % 4;		/* canvia totalment de sentit */
   else
   { if (nd == 1)			/* si nomes pot en una direccio */
-  	f1.d = vd[0];			/* li assigna aquesta */
+  	actual.d = vd[0];			/* li assigna aquesta */
     else				/* altrament */
-    	f1.d = vd[rand() % nd];		/* segueix una dir. aleatoria */
+    	actual.d = vd[rand() % nd];		/* segueix una dir. aleatoria */
 
-    taula_obj[aux].f = f1.f + df[f1.d];  /* calcular seguent posicio final */
-    taula_obj[aux].c = f1.c + dc[f1.d];
-			pthread_mutex_lock(&dibuixar);
-    taula_obj[aux].a = win_quincar(taula_obj[aux].f,taula_obj[aux].c);	/* calcular caracter seguent posicio */
-    win_escricar(f1.f,f1.c,f1.a,NO_INV);	/* esborra posicio anterior */
-    f1.f = taula_obj[aux].f; f1.c = taula_obj[aux].c; f1.a = taula_obj[aux].a;	/* actualitza posicio */
-    win_escricar(f1.f,f1.c,valor,NO_INV);		/* redibuixara fantasma */
-			pthread_mutex_unlock(&dibuixar);
-    if (f1.a == '0') {
-				pthread_mutex_lock(&variables);
-			fi2 = 1;		/* ha capturat menjacocos */
-				pthread_mutex_unlock(&variables);
-		}
+    seg.f = actual.f + df[actual.d];  /* calcular seguent posicio final */
+    seg.c = actual.c + dc[actual.d];
+		pthread_mutex_lock(&mutex);
+    seg.a = win_quincar(seg.f,seg.c);	/* calcular caracter seguent posicio */
+    win_escricar(actual.f,actual.c,actual.a,NO_INV);	/* esborra posicio anterior */
+    win_escricar(seg.f,seg.c,'0'+(intptr_t) index,NO_INV);		/* redibuixa fantasma */
+		pthread_mutex_unlock(&mutex);
+		 actual.f = seg.f; actual.c = seg.c; actual.a = seg.a;	/* actualitza posicio */
+    if (actual.a == 'C') fi2 = 1;		/* ha capturat menjacocos */
   }
+	win_retard(retard*2);
    }
   pthread_exit((void *) (intptr_t) fi2);
 }
@@ -299,9 +293,10 @@ void* mou_fantasma(void * index)
 /* els cocos, i 0 altrament */
 void* mou_menjacocos(void * nulo)
 {
-  char strin[12];
+  char strin[30];
   objecte seg;
   int tec;
+	int tics=0, minuts=0, segons=0;
 
 
 	while (!fi1 && !fi2){
@@ -313,37 +308,39 @@ void* mou_menjacocos(void * nulo)
 	    case TEC_ESQUER:	mc.d = 1; break;
 	    case TEC_AVALL:	mc.d = 2; break;
 	    case TEC_DRETA:	mc.d = 3; break;
-	    case TEC_RETURN:
-				pthread_mutex_lock(&variables);
-			fi1 = 1;
-				pthread_mutex_unlock(&variables);
-			break;
+	    case TEC_RETURN:	fi1 = -1; break;
 	   }
 	  seg.f = mc.f + df[mc.d];	/* calcular seguent posicio */
 	  seg.c = mc.c + dc[mc.d];
-		pthread_mutex_lock(&dibuixar);
+		pthread_mutex_lock(&mutex);
 	  seg.a = win_quincar(seg.f,seg.c);	/* calcular caracter seguent posicio */
-		pthread_mutex_unlock(&dibuixar);
+		pthread_mutex_unlock(&mutex);
 	  if ((seg.a == ' ') || (seg.a == '.'))
 	  {
-			pthread_mutex_lock(&dibuixar);
+			pthread_mutex_lock(&mutex);
 	    win_escricar(mc.f,mc.c,' ',NO_INV);		/* esborra posicio anterior */
 	    mc.f = seg.f; mc.c = seg.c;			/* actualitza posicio */
-	    win_escricar(mc.f,mc.c,'0',NO_INV);		/* redibuixara menjacocos */
-			pthread_mutex_unlock(&dibuixar);
-	    if (seg.a == '.')
+	    win_escricar(mc.f,mc.c,'C',NO_INV);		/* redibuixa menjacocos */
+			pthread_mutex_unlock(&mutex);	    if (seg.a == '.')
 	    {
 		cocos--;
-			pthread_mutex_lock(&dibuixar);
-		sprintf(strin,"Cocos: %d", cocos); win_escristr(strin);
-			pthread_mutex_unlock(&dibuixar);
-		if (cocos == 0) {
-				pthread_mutex_lock(&variables);
-			fi1 = 1;
-				pthread_mutex_unlock(&variables);
-		}
+
+		if (cocos == 0) fi1 = 1;
 	    }
 	  }
+		sprintf(strin,"Cocos: %d \t\t Minuts: %d Segons: %d", cocos, minuts, segons); win_escristr(strin);
+
+		win_retard(retard);
+		tics++;
+		if(tics==(int)(1000/retard)){
+			tics=0;
+			segons++;
+			if(segons==60){
+				segons=0;
+				minuts++;
+			}
+		}
+
 	}
 	pthread_exit((void *) (intptr_t) fi1);
 }
@@ -351,17 +348,19 @@ void* mou_menjacocos(void * nulo)
 /* programa principal				    */
 int main(int n_args, const char *ll_args[])
 {
-	pthread_mutex_init(&dibuixar,NULL);
-	pthread_mutex_init(&variables,NULL);
   int rc;		/* variables locals */
   srand(getpid());		/* inicialitza numeros aleatoris */
-
+	clock_t t_ini, t_fin;
+	int secs;
   if ((n_args != 3) && (n_args !=4))
   {	fprintf(stderr,"Comanda: cocos1 fit_param num_fantasmes [retard]\n");
   	exit(1);
   }
   carrega_parametres(ll_args[1]);
   n_threads = atoi(ll_args[2]);
+	if(n_threads>MAX_THREADS) n_threads=MAX_THREADS;
+	else if(n_threads<1)n_threads=1;
+
   if (n_args == 4) retard = atoi(ll_args[3]);
   else retard = 100;
 
@@ -370,7 +369,8 @@ int main(int n_args, const char *ll_args[])
   {
     inicialitza_joc();
     int i, n=0;
-
+pthread_mutex_init(&mutex,NULL);
+	time(&t_ini);
 		for(i=0;i<n_threads;i++){
 			if((pthread_create(&t_id[n], NULL,mou_fantasma,(void *) (intptr_t) i))==0) n++;
 		}
@@ -378,16 +378,27 @@ int main(int n_args, const char *ll_args[])
 	pthread_t coco;
 	pthread_create(&coco, NULL,mou_menjacocos, NULL);
 
+	for(i=0;i<n;i++){
+		pthread_join(t_id[i], NULL);
+	}
 		for(i=0;i<n;i++){
 			pthread_join(t_id[i], NULL);
 		}
-		pthread_mutex_destroy(&dibuixar);
-		pthread_mutex_destroy(&variables);
+		pthread_join(coco,NULL);
+		pthread_mutex_destroy(&mutex);
     win_fi();
+    time(&t_fin);
+    if (fi1 == -1) printf("S'ha aturat el joc amb tecla RETURN!\n");
+    else { if (fi1) printf("Ha guanyat l'usuari!\n");
+	     else printf("Ha guanyat l'ordinador!\n");}
 
-    /*if (fi1 == 1) printf("S'ha aturat el joc amb tecla RETURN!\n");
-    else { */if (fi1) printf("Ha guanyat l'usuari!\n");
-	     else printf("Ha guanyat l'ordinador!\n");// }
+			 secs = (t_fin-t_ini);
+			 int min = (int)(secs/60);
+			 secs = ((int)secs%60);
+	 	printf("Ha tardat %d minuts i %d segons\n", min, secs);
+		 if(cocos!=0){
+		 	printf("Falten %d cocos per menjar\n", cocos);
+		}
   }
   else
   {	fprintf(stderr,"Error: no s'ha pogut crear el taulell:\n");

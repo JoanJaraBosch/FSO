@@ -68,6 +68,7 @@
 #include <unistd.h>		/* per getpid() */
 #include <pthread.h>
 #include <stdint.h>
+#include <time.h>
 #include "winsuport.h"		/* incloure definicions de funcions propies */
 
 
@@ -87,8 +88,11 @@ typedef struct {		/* per un objecte (menjacocos o fantasma) */
 } objecte;
 
 int n_threads;
+
+int minuts=0, segons=0;
 pthread_t t_id[MAX_THREADS];
-objecte taula_obj[MAX_THREADS];
+
+
 int fi1 = 0, fi2 = 0;
 /* variables globals */
 int n_fil1, n_col;		/* dimensions del camp de joc */
@@ -200,20 +204,15 @@ void inicialitza_joc(void)
        if (f1.a == c_req) r = -7;	/* error: fantasma sobre pared */
        else
        {
-
-				 for(i=0; i<n_threads; i++){
-					 taula_obj[i].f=f1.f;
-					 taula_obj[i].c=f1.c;
-					 taula_obj[i].d=f1.d;
-					 taula_obj[i].a=f1.a;
-				 }
-	cocos = 0;			/* compta el numero total de cocos */
+	cocos = 0;
+	segons=0;
+	minuts=0;			/* compta el numero total de cocos */
 	for (i=0; i<n_fil1-1; i++)
 	  for (j=0; j<n_col; j++)
 	    if (win_quincar(i,j)=='.') cocos++;
 
-        win_escricar(mc.f,mc.c,'0',NO_INV);
-	win_escricar(f1.f,f1.c,'1',NO_INV);
+        win_escricar(mc.f,mc.c,'C',NO_INV);
+	win_escricar(f1.f,f1.c,'0',NO_INV);
 
         if (mc.a == '.') cocos--;	/* menja primer coco */
 
@@ -245,38 +244,42 @@ void inicialitza_joc(void)
 void* mou_fantasma(void * index)
 {
   int k, vk, nd, vd[3];
-	int aux =(intptr_t) index;
-	char valor = '1'+(intptr_t) index;
-  nd = 0;
+	objecte seg, actual;
+	actual.a=f1.a;
+	actual.c=f1.c;
+	actual.f=f1.f;
+	actual.d=f1.d;
 	while (!fi1 && !fi2){
+			nd = 0;
   for (k=-1; k<=1; k++)		/* provar direccio actual i dir. veines */
   {
-    vk = (f1.d + k) % 4;		/* direccio veina */
+    vk = (actual.d + k) % 4;		/* direccio veina */
     if (vk < 0) vk += 4;		/* corregeix negatius */
-    taula_obj[aux].f = f1.f + df[vk]; /* calcular posicio en la nova dir.*/
-    taula_obj[aux].c = f1.c + dc[vk];
-    taula_obj[aux].a = win_quincar(taula_obj[aux].f,taula_obj[aux].c);	/* calcular caracter seguent posicio */
-    if ((taula_obj[aux].a==' ') || (taula_obj[aux].a=='.') || (taula_obj[aux].a=='0'))
+    seg.f = actual.f + df[vk]; /* calcular posicio en la nova dir.*/
+    seg.c = actual.c + dc[vk];
+    seg.a = win_quincar(seg.f,seg.c);	/* calcular caracter seguent posicio */
+    if ((seg.a==' ') || (seg.a=='.') || (seg.a=='C'))
     { vd[nd] = vk;			/* memoritza com a direccio possible */
       nd++;
     }
   }
   if (nd == 0)				/* si no pot continuar, */
-  	f1.d = (f1.d + 2) % 4;		/* canvia totalment de sentit */
+  	actual.d = (actual.d + 2) % 4;		/* canvia totalment de sentit */
   else
   { if (nd == 1)			/* si nomes pot en una direccio */
-  	f1.d = vd[0];			/* li assigna aquesta */
+  	actual.d = vd[0];			/* li assigna aquesta */
     else				/* altrament */
-    	f1.d = vd[rand() % nd];		/* segueix una dir. aleatoria */
+    	actual.d = vd[rand() % nd];		/* segueix una dir. aleatoria */
 
-    taula_obj[aux].f = f1.f + df[f1.d];  /* calcular seguent posicio final */
-    taula_obj[aux].c = f1.c + dc[f1.d];
-    taula_obj[aux].a = win_quincar(taula_obj[aux].f,taula_obj[aux].c);	/* calcular caracter seguent posicio */
-    win_escricar(f1.f,f1.c,f1.a,NO_INV);	/* esborra posicio anterior */
-    f1.f = taula_obj[aux].f; f1.c = taula_obj[aux].c; f1.a = taula_obj[aux].a;	/* actualitza posicio */
-    win_escricar(f1.f,f1.c,valor,NO_INV);		/* redibuixa fantasma */
-    if (f1.a == '0') fi2 = 1;		/* ha capturat menjacocos */
+    seg.f = actual.f + df[actual.d];  /* calcular seguent posicio final */
+    seg.c = actual.c + dc[actual.d];
+    seg.a = win_quincar(seg.f,seg.c);	/* calcular caracter seguent posicio */
+    win_escricar(actual.f,actual.c,actual.a,NO_INV);	/* esborra posicio anterior */
+    actual.f = seg.f; actual.c = seg.c; actual.a = seg.a;	/* actualitza posicio */
+    win_escricar(actual.f,actual.c,'0'+(intptr_t) index,NO_INV);		/* redibuixa fantasma */
+    if (actual.a == 'C') fi2 = 1;		/* ha capturat menjacocos */
   }
+	win_retard(retard*2);
    }
   pthread_exit((void *) (intptr_t) fi2);
 }
@@ -289,9 +292,10 @@ void* mou_fantasma(void * index)
 /* els cocos, i 0 altrament */
 void* mou_menjacocos(void * nulo)
 {
-  char strin[12];
+  char strin[30];
   objecte seg;
   int tec;
+	int segons=0, minuts=0, tics=0;
 
 
 	while (!fi1 && !fi2){
@@ -303,7 +307,7 @@ void* mou_menjacocos(void * nulo)
 	    case TEC_ESQUER:	mc.d = 1; break;
 	    case TEC_AVALL:	mc.d = 2; break;
 	    case TEC_DRETA:	mc.d = 3; break;
-	    case TEC_RETURN:	fi1 = 1; break;
+	    case TEC_RETURN:	fi1 = -1; break;
 	   }
 	  seg.f = mc.f + df[mc.d];	/* calcular seguent posicio */
 	  seg.c = mc.c + dc[mc.d];
@@ -312,14 +316,26 @@ void* mou_menjacocos(void * nulo)
 	  {
 	    win_escricar(mc.f,mc.c,' ',NO_INV);		/* esborra posicio anterior */
 	    mc.f = seg.f; mc.c = seg.c;			/* actualitza posicio */
-	    win_escricar(mc.f,mc.c,'0',NO_INV);		/* redibuixa menjacocos */
+	    win_escricar(mc.f,mc.c,'C',NO_INV);		/* redibuixa menjacocos */
 	    if (seg.a == '.')
 	    {
 		cocos--;
-		sprintf(strin,"Cocos: %d", cocos); win_escristr(strin);
 		if (cocos == 0) fi1 = 1;
 	    }
 	  }
+		sprintf(strin,"Cocos: %d \t\t Minuts: %d Segons: %d", cocos, minuts, segons); win_escristr(strin);
+
+		win_retard(retard);
+		tics++;
+		if(tics==(int)(1000/retard)){
+			tics=0;
+			segons++;
+			if(segons==60){
+				segons=0;
+				minuts++;
+			}
+		}
+
 	}
 	pthread_exit((void *) (intptr_t) fi1);
 }
@@ -329,13 +345,17 @@ int main(int n_args, const char *ll_args[])
 {
   int rc;		/* variables locals */
   srand(getpid());		/* inicialitza numeros aleatoris */
-
+	clock_t t_ini, t_fin;
+	  int secs;
   if ((n_args != 3) && (n_args !=4))
   {	fprintf(stderr,"Comanda: cocos1 fit_param num_fantasmes [retard]\n");
   	exit(1);
   }
   carrega_parametres(ll_args[1]);
   n_threads = atoi(ll_args[2]);
+	if(n_threads>MAX_THREADS) n_threads=MAX_THREADS;
+	else if(n_threads<1)n_threads=1;
+
   if (n_args == 4) retard = atoi(ll_args[3]);
   else retard = 100;
 
@@ -344,22 +364,30 @@ int main(int n_args, const char *ll_args[])
   {
     inicialitza_joc();
     int i, n=0;
-
+		time(&t_ini);
 		for(i=0;i<n_threads;i++){
 			if((pthread_create(&t_id[n], NULL,mou_fantasma,(void *) (intptr_t) i))==0) n++;
 		}
 
 	pthread_t coco;
 	pthread_create(&coco, NULL,mou_menjacocos, NULL);
-
 		for(i=0;i<n;i++){
 			pthread_join(t_id[i], NULL);
 		}
+		pthread_join(coco,NULL);
     win_fi();
+		time(&t_fin);
+		if (fi1 == -1) printf("S'ha aturat el joc amb tecla RETURN!\n");
+		else { if (fi1) printf("Ha guanyat l'usuari!\n");
+			 else printf("Ha guanyat l'ordinador!\n");}
 
-    /*if (fi1 == 1) printf("S'ha aturat el joc amb tecla RETURN!\n");
-    else { */if (fi1) printf("Ha guanyat l'usuari!\n");
-	     else printf("Ha guanyat l'ordinador!\n");// }
+			 secs = (t_fin-t_ini);
+			 int min = (int)(secs/60);
+			 secs = ((int)secs%60);
+		 printf("Ha tardat %d minuts i %d segons\n", min, secs);
+		 if(cocos!=0){
+			printf("Falten %d cocos per menjar\n", cocos);
+		}
   }
   else
   {	fprintf(stderr,"Error: no s'ha pogut crear el taulell:\n");
