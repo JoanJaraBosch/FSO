@@ -293,7 +293,7 @@ void* mou_fantasma(void * index)
 /* els cocos, i 0 altrament */
 void* mou_menjacocos(void * nulo)
 {
-  char strin[30];
+  char strin[33];
   objecte seg;
   int tec;
 	int tics=0, minuts=0, segons=0;
@@ -328,7 +328,7 @@ void* mou_menjacocos(void * nulo)
 		if (cocos == 0) fi1 = 1;
 	    }
 	  }
-		sprintf(strin,"Cocos: %d \t\t Minuts: %d Segons: %d", cocos, minuts, segons); win_escristr(strin);
+		sprintf(strin,"Cocos: %d    Minuts: %d Segons: %d", cocos, minuts, segons); win_escristr(strin);
 
 		win_retard(retard);
 		tics++;
@@ -350,8 +350,8 @@ int main(int n_args, const char *ll_args[])
 {
   int rc;		/* variables locals */
   srand(getpid());		/* inicialitza numeros aleatoris */
-	clock_t t_ini, t_fin;
-	int secs;
+	long int t_ini, t_fin;
+	long int secs;
   if ((n_args != 3) && (n_args !=4))
   {	fprintf(stderr,"Comanda: cocos1 fit_param num_fantasmes [retard]\n");
   	exit(1);
@@ -393,9 +393,9 @@ pthread_mutex_init(&mutex,NULL);
 	     else printf("Ha guanyat l'ordinador!\n");}
 
 			 secs = (t_fin-t_ini);
-			 int min = (int)(secs/60);
+			 long int min = (int)(secs/60);
 			 secs = ((int)secs%60);
-	 	printf("Ha tardat %d minuts i %d segons\n", min, secs);
+	 	printf("Ha tardat %ld minuts i %ld segons\n", min, secs);
 		 if(cocos!=0){
 		 	printf("Falten %d cocos per menjar\n", cocos);
 		}
