@@ -4,8 +4,11 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <time.h>
+#include <signal.h>
+#include <curses.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <string.h>
 #include "memoria.h"
 #include "semafor.h"
 #include "missatge.h"
@@ -29,7 +32,8 @@ typedef struct {		/* per un objecte (menjacocos o fantasma) */
 int main(int n_args, const char *ll_args[])
 {
 	intptr_t *map_fi1 , *map_fi2, *map_camp;
-	int midaCamp, id_sem,id_bustia, fi1, fi2, nfil, ncol, retard, index;
+	int *map_bustia;
+	int midaCamp, id_sem, fi1, fi2, nfil, ncol, retard, index, id_bustia_mem;
   int k, vk, nd, vd[3];
 	objecte seg, actual;
 	int df[] = {-1,0,1,0};
@@ -46,16 +50,19 @@ int main(int n_args, const char *ll_args[])
 	fi1 = atoi(ll_args[2]);
 	fi2 = atoi(ll_args[3]);
 	midaCamp = atoi(ll_args[1]);
+	id_bustia_mem = atoi(ll_args[13]);
+	map_bustia = map_mem(id_bustia_mem);
 
 	map_camp = map_mem(midaCamp);
+	map_bustia = map_mem(id_bustia_mem);
 	map_fi1 = map_mem(fi1);
 	map_fi2 = map_mem(fi2);
-
 	nfil = atoi(ll_args[8]);
 	ncol = atoi(ll_args[9]);
 
 	win_set(map_camp,nfil,ncol);
-
+	srand(getpid());
+	int vist = 1;
 	while (!(*map_fi1) && !(*map_fi2)){
 			nd = 0;
   for (k=-1; k<=1; k++)		/* provar direccio actual i dir. veines */
@@ -65,10 +72,15 @@ int main(int n_args, const char *ll_args[])
     seg.f = actual.f + df[vk]; /* calcular posicio en la nova dir.*/
     seg.c = actual.c + dc[vk];
     seg.a = win_quincar(seg.f,seg.c);	/* calcular caracter seguent posicio */
-    if ((seg.a==' ') || (seg.a=='.') || (seg.a=='C'))
+    if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C')) && (vist==0))
     { vd[nd] = vk;			/* memoritza com a direccio possible */
       nd++;
-    }
+    }else{
+			if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a== '+')) && (vist==1) && (nfil>seg.f) && (0<seg.f) && (ncol>seg.c) && (0<seg.c))
+	    { vd[nd] = vk;			/* memoritza com a direccio possible */
+	      nd++;
+	    }
+		}
   }
   if (nd == 0)				/* si no pot continuar, */
   	actual.d = (actual.d + 2) % 4;		/* canvia totalment de sentit */
@@ -82,15 +94,36 @@ int main(int n_args, const char *ll_args[])
     seg.f = actual.f + df[actual.d];  /* calcular seguent posicio final */
     seg.c = actual.c + dc[actual.d];
     seg.a = win_quincar(seg.f,seg.c);	/* calcular caracter seguent posicio */
-		if ((seg.a==' ') || (seg.a=='.') || (seg.a=='C'))
+		if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C')) && (vist==0))
 		{
     win_escricar(actual.f,actual.c,actual.a,NO_INV);	/* esborra posicio anterior */
     win_escricar(seg.f,seg.c,'0'+(intptr_t) index,NO_INV);		/* redibuixa fantasma */
 		 actual.f = seg.f; actual.c = seg.c; actual.a = seg.a;	/* actualitza posicio */
+	 }else{
+		 if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a=='+')) && (vist==1)&& (nfil>seg.f) && (0<seg.f) && (ncol>seg.c) && (0<seg.c))
+		 {
+			if(actual.a == '+'){
+				win_escricar(actual.f,actual.c,actual.a,INVERS);
+			}else{
+			win_escricar(actual.f,actual.c,actual.a,NO_INV);	/* esborra posicio anterior */
+		}
+			win_escricar(seg.f,seg.c,'0'+(intptr_t) index,NO_INV);		/* redibuixa fantasma */
+			actual.f = seg.f; actual.c = seg.c; actual.a = seg.a;	/* actualitza posicio */
+		}
 	 }
 		 signalS(id_sem);
     if (actual.a == 'C') *map_fi2 = 1;		/* ha capturat menjacocos */
   }
+	char missatge[80], resposta[80];
+	sprintf(missatge, "%i",index);
+	sendM(map_bustia[index-1], missatge, 2);
+	int jo = 0;
+	while(jo == 0){
+		receiveM(map_bustia[index-1], resposta);
+		if(strcmp(missatge, resposta) == 0){
+			jo=1;
+		}
+	}
 	win_retard(retard*2);
    }
   return(0);

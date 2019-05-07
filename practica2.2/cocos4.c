@@ -98,7 +98,8 @@ int minuts=0, segons=0;
 pid_t tpid[MAX_PROC];
 
 intptr_t *map_fi1 , *map_fi2, *map_camp;
-int id_fi1,id_fi2, id_camp;
+int *map_bustia;
+int id_fi1,id_fi2, id_camp, id_bustia_mem;
 objecte f1;
 
 /* variables globals */
@@ -115,7 +116,7 @@ int dc[] = {0, -1, 0, 1};	/* dalt, esquerra, baix, dreta */
 int cocos;			/* numero restant de cocos per menjar */
 int retard;		/* valor del retard de moviment, en mil.lisegons */
 
-int id_sem, id_bustia;
+int id_sem;
 
 
 
@@ -336,6 +337,13 @@ int main(int n_args, const char *ll_args[])
 		id_fi2 = ini_mem(sizeof(int));
 		map_fi2 = map_mem(id_fi2);
 		id_sem=ini_sem(1);
+		id_bustia_mem = ini_mem(sizeof(int)*MAX_PROC);
+		map_bustia = map_mem(id_bustia_mem);
+
+		for(int k =0 ; k<MAX_PROC;k++){
+			map_bustia[k]=ini_mis();
+		}
+
 		*map_fi1 = 0;
 		*map_fi2 = 0;
 		sprintf(a1,"%i",id_camp);
@@ -345,7 +353,7 @@ int main(int n_args, const char *ll_args[])
 		sprintf(a9,"%i",n_col);
 		sprintf(a10,"%i",retard);
 		sprintf(a12,"%i",id_sem);
-		sprintf(a13,"%i",id_bustia);
+		sprintf(a13,"%i",id_bustia_mem);
 
 		win_set(map_camp,n_fil1,n_col);
 		inicialitza_joc();
@@ -414,5 +422,7 @@ while(! (*map_fi1) && ! (*map_fi2)){
 	elim_mem(id_camp);
 	elim_mem(id_fi1);
 	elim_mem(id_fi2);
+	elim_mem(id_bustia_mem);
+
   return(0);
 }
