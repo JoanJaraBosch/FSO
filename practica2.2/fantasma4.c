@@ -156,7 +156,7 @@ int main(int n_args, const char *ll_args[])
     { vd[nd] = vk;			/* memoritza com a direccio possible */
       nd++;
     }else{
-			if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a== '+')) && (vist==1) && (nfil-1>seg.f) && (0<seg.f) && (ncol-1>seg.c) && (0<seg.c))
+			if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a== '+')) && (vist==1) && (nfil-2>seg.f) && (0<seg.f) && (ncol-2>seg.c) && (0<seg.c))
 	    { vd[nd] = vk;			/* memoritza com a direccio possible */
 	      nd++;
 	    }
@@ -183,11 +183,15 @@ int main(int n_args, const char *ll_args[])
     seg.a = win_quincar(seg.f,seg.c);	/* calcular caracter seguent posicio */
 		if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C')) && (vist==0))
 		{
-    win_escricar(actual.f,actual.c,actual.a,NO_INV);	/* esborra posicio anterior */
+			if(actual.a == '+'){
+				win_escricar(actual.f,actual.c,actual.a,INVERS);
+			}else{
+			win_escricar(actual.f,actual.c,actual.a,NO_INV);	/* esborra posicio anterior */
+		}
     win_escricar(seg.f,seg.c,'0'+(intptr_t) index,NO_INV);		/* redibuixa fantasma */
 		 actual.f = seg.f; actual.c = seg.c; actual.a = seg.a;	/* actualitza posicio */
 	 }else{
-		 if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a=='+')) && (vist==1)&& (nfil-1>seg.f) && (0<seg.f) && (ncol-1>seg.c) && (0<seg.c))
+		 if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a=='+')) && (vist==1)&& (nfil-2>seg.f) && (0<seg.f) && (ncol-2>seg.c) && (0<seg.c))
 		 {
 			if(actual.a == '+'){
 				win_escricar(actual.f,actual.c,actual.a,INVERS);
