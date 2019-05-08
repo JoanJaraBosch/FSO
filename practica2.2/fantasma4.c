@@ -31,6 +31,9 @@ typedef struct {		/* per un objecte (menjacocos o fantasma) */
 
 int main(int n_args, const char *ll_args[])
 {
+
+	char missatge[80], resposta[80], vistcocos[80];
+	sprintf(vistcocos, "el cocos ha estat vist");
 	intptr_t *map_fi1 , *map_fi2, *map_camp, *map_xocs;
 	int *map_bustia;
 	int midaCamp, id_sem, fi1, fi2, xocs, nfil, ncol, retard, index, id_bustia_mem;
@@ -48,9 +51,9 @@ int main(int n_args, const char *ll_args[])
 	index=atoi(ll_args[11]);
 	xocs=atoi(ll_args[14]);
 	map_xocs = map_mem(xocs);
-
-	int auxiliar = (*map_xocs) * index;
-	while(((*map_xocs) != auxiliar ) &&  !(*map_fi1) && !(*map_fi2)){
+	sprintf(missatge, "%i",index);
+	int auxiliar = 2 * (1+index);
+	while(((*map_xocs) < auxiliar ) &&  !(*map_fi1) && !(*map_fi2)){
 
 	}
 	actual.a=ll_args[4][0];
@@ -72,6 +75,8 @@ int main(int n_args, const char *ll_args[])
 	win_set(map_camp,nfil,ncol);
 	srand(getpid());
 	int vist = 0;
+	int jo = 0;
+
 	while (!(*map_fi1) && !(*map_fi2)){
 			nd = 0;
   for (k=-1; k<=1; k++)		/* provar direccio actual i dir. veines */
@@ -81,21 +86,28 @@ int main(int n_args, const char *ll_args[])
     seg.f = actual.f + df[vk]; /* calcular posicio en la nova dir.*/
     seg.c = actual.c + dc[vk];
     seg.a = win_quincar(seg.f,seg.c);	/* calcular caracter seguent posicio */
+
     if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C')) && (vist==0))
     { vd[nd] = vk;			/* memoritza com a direccio possible */
       nd++;
     }else{
-			if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a== '+')) && (vist==1) && (nfil>seg.f) && (0<seg.f) && (ncol>seg.c) && (0<seg.c))
+			if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a== '+')) && (vist==1) && (nfil-1>seg.f) && (0<seg.f) && (ncol-1>seg.c) && (0<seg.c))
 	    { vd[nd] = vk;			/* memoritza com a direccio possible */
 	      nd++;
 	    }
 		}
   }
-  if (nd == 0)				/* si no pot continuar, */
+  if (nd == 0){				/* si no pot continuar, */
   	actual.d = (actual.d + 2) % 4;		/* canvia totalment de sentit */
+	}
   else
   { if (nd == 1){
 				/* si nomes pot en una direccio */
+				if((win_quincar((actual.f + df[actual.d]),(actual.c + dc[actual.d])))=='+'){
+					if ((n_threads*2)>(*map_xocs)){
+						*map_xocs = (*map_xocs)+1;
+					}
+				}
   	actual.d = vd[0];			/* li assigna aquesta */
 	}else				/* altrament */
     	actual.d = vd[rand() % nd];		/* segueix una dir. aleatoria */
@@ -110,32 +122,40 @@ int main(int n_args, const char *ll_args[])
     win_escricar(seg.f,seg.c,'0'+(intptr_t) index,NO_INV);		/* redibuixa fantasma */
 		 actual.f = seg.f; actual.c = seg.c; actual.a = seg.a;	/* actualitza posicio */
 	 }else{
-		 if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a=='+')) && (vist==1)&& (nfil>seg.f) && (0<seg.f) && (ncol>seg.c) && (0<seg.c))
+		 if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a=='+')) && (vist==1)&& (nfil-1>seg.f) && (0<seg.f) && (ncol-1>seg.c) && (0<seg.c))
 		 {
 			if(actual.a == '+'){
 				win_escricar(actual.f,actual.c,actual.a,INVERS);
-				win_escricar(seg.f,seg.c,'0'+(intptr_t) index,INVERS);		/* redibuixa fantasma */
 			}else{
 			win_escricar(actual.f,actual.c,actual.a,NO_INV);	/* esborra posicio anterior */
-			win_escricar(seg.f,seg.c,'0'+(intptr_t) index,NO_INV);		/* redibuixa fantasma */
 		}
 
+		win_escricar(seg.f,seg.c,'0'+(intptr_t) index,INVERS);		/* redibuixa fantasma */
 			actual.f = seg.f; actual.c = seg.c; actual.a = seg.a;	/* actualitza posicio */
 		}
 	 }
 		 signalS(id_sem);
     if (actual.a == 'C') *map_fi2 = 1;		/* ha capturat menjacocos */
   }
-	char missatge[80], resposta[80];
-	sprintf(missatge, "%i",index);
-	sendM(map_bustia[index-1], missatge, 2);
-	int jo = 0;
+	waitS(id_sem);
+	int k;
+	for(k=0; k<	n_threads;k++ ){
+		sendM(map_bustia[k], vistcocos, 22);
+	}
+
+	sendM(map_bustia[index], missatge, 2);
+	signalS(id_sem);
 	while(jo == 0){
-		receiveM(map_bustia[index-1], resposta);
+		receiveM(map_bustia[index], resposta);
 		if(strcmp(missatge, resposta) == 0){
 			jo=1;
+		}else{
+			if(strcmp(vistcocos, resposta) == 0){
+				vist=1;
+			}
 		}
 	}
+	jo=0;
 	win_retard(retard*2);
    }
   return(0);
