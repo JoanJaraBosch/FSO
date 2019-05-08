@@ -97,9 +97,9 @@ int n_threads;
 int minuts=0, segons=0;
 pid_t tpid[MAX_PROC];
 
-intptr_t *map_fi1 , *map_fi2, *map_camp;
+intptr_t *map_fi1 , *map_fi2, *map_camp, *map_xocs;
 int *map_bustia;
-int id_fi1,id_fi2, id_camp, id_bustia_mem;
+int id_fi1,id_fi2, id_camp, id_bustia_mem, xocs;
 objecte f1;
 
 /* variables globals */
@@ -283,7 +283,11 @@ void* mou_menjacocos(void * nulo)
 		cocos--;
 		if (cocos == 0) (*map_fi1) = 1;
 	    }
-	  }
+	  }else{
+			if ((seg.a == '+') && ((n_threads*2)>(*map_xocs))){
+				*map_xocs = (*map_xocs)+1;
+			}
+		}
 		signalS(id_sem);
 		sprintf(strin,"Cocos: %d    Minuts: %d Segons: %d", cocos, minuts, segons);
 
@@ -312,7 +316,7 @@ int main(int n_args, const char *ll_args[])
   srand(getpid());		/* inicialitza numeros aleatoris */
 	long int t_ini, t_fin;
 	long int secs;
-	char a1[20], a2[20], a3[20], a4[20], a5[20], a6[20], a7[20], a8[20], a9[20], a10[20], a11[20], a12[20], a13[20];
+	char a1[20], a2[20], a3[20], a4[20], a5[20], a6[20], a7[20], a8[20], a9[20], a10[20], a11[20], a12[20], a13[20], a14[20], a15[20];
 
   if ((n_args != 3) && (n_args !=4))
   {	fprintf(stderr,"Comanda: cocos1 fit_param num_fantasmes [retard]\n");
@@ -333,9 +337,11 @@ int main(int n_args, const char *ll_args[])
 		map_camp = map_mem(id_camp);
 
 		id_fi1 = ini_mem(sizeof(int));
+		xocs = ini_mem(sizeof(int));
 		map_fi1 = map_mem(id_fi1);
 		id_fi2 = ini_mem(sizeof(int));
 		map_fi2 = map_mem(id_fi2);
+		map_xocs = map_mem(xocs);
 		id_sem=ini_sem(1);
 		id_bustia_mem = ini_mem(sizeof(int)*MAX_PROC);
 		map_bustia = map_mem(id_bustia_mem);
@@ -346,6 +352,7 @@ int main(int n_args, const char *ll_args[])
 
 		*map_fi1 = 0;
 		*map_fi2 = 0;
+		*map_xocs = 0;
 		sprintf(a1,"%i",id_camp);
 		sprintf(a2,"%i",id_fi1);
 		sprintf(a3,"%i",id_fi2);
@@ -354,6 +361,8 @@ int main(int n_args, const char *ll_args[])
 		sprintf(a10,"%i",retard);
 		sprintf(a12,"%i",id_sem);
 		sprintf(a13,"%i",id_bustia_mem);
+		sprintf(a14,"%i",xocs);
+		sprintf(a15, "%i", n_threads);
 
 		win_set(map_camp,n_fil1,n_col);
 		inicialitza_joc();
@@ -370,7 +379,7 @@ int main(int n_args, const char *ll_args[])
 			if (tpid[n] == (pid_t) 0) /* branca del fill */
 			{
 				sprintf(a11,"%i",i);
-				execlp("./fantasma4", "fantasma4", a1, a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13, (char *)0);
+				execlp("./fantasma4", "fantasma4", a1, a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15, (char *)0);
 	 			fprintf(stderr,"error: no puc executar el process fill \'fantasma3\'\n");
 	 			exit(0);
 			}else if (tpid[n] > 0) n++;

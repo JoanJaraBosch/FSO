@@ -31,38 +31,47 @@ typedef struct {		/* per un objecte (menjacocos o fantasma) */
 
 int main(int n_args, const char *ll_args[])
 {
-	intptr_t *map_fi1 , *map_fi2, *map_camp;
+	intptr_t *map_fi1 , *map_fi2, *map_camp, *map_xocs;
 	int *map_bustia;
-	int midaCamp, id_sem, fi1, fi2, nfil, ncol, retard, index, id_bustia_mem;
+	int midaCamp, id_sem, fi1, fi2, xocs, nfil, ncol, retard, index, id_bustia_mem;
   int k, vk, nd, vd[3];
 	objecte seg, actual;
 	int df[] = {-1,0,1,0};
 	int dc[] = {0,-1,0,1};
 
+	int n_threads = atoi(ll_args[15]);
+	fi1 = atoi(ll_args[2]);
+	fi2 = atoi(ll_args[3]);
+	map_fi1 = map_mem(fi1);
+	map_fi2 = map_mem(fi2);
+
+	index=atoi(ll_args[11]);
+	xocs=atoi(ll_args[14]);
+	map_xocs = map_mem(xocs);
+
+	int auxiliar = (*map_xocs) * index;
+	while(((*map_xocs) != auxiliar ) &&  !(*map_fi1) && !(*map_fi2)){
+
+	}
 	actual.a=ll_args[4][0];
 	actual.c=atoi(ll_args[7]);
 	actual.f=atoi(ll_args[6]);
 	actual.d=atoi(ll_args[5]);
 
 	retard=atoi(ll_args[10]);
-	index=atoi(ll_args[11]);
 	id_sem = atoi(ll_args[12]);
-	fi1 = atoi(ll_args[2]);
-	fi2 = atoi(ll_args[3]);
 	midaCamp = atoi(ll_args[1]);
 	id_bustia_mem = atoi(ll_args[13]);
 	map_bustia = map_mem(id_bustia_mem);
 
 	map_camp = map_mem(midaCamp);
 	map_bustia = map_mem(id_bustia_mem);
-	map_fi1 = map_mem(fi1);
-	map_fi2 = map_mem(fi2);
 	nfil = atoi(ll_args[8]);
 	ncol = atoi(ll_args[9]);
 
 	win_set(map_camp,nfil,ncol);
 	srand(getpid());
-	int vist = 1;
+	int vist = 0;
 	while (!(*map_fi1) && !(*map_fi2)){
 			nd = 0;
   for (k=-1; k<=1; k++)		/* provar direccio actual i dir. veines */
@@ -85,9 +94,10 @@ int main(int n_args, const char *ll_args[])
   if (nd == 0)				/* si no pot continuar, */
   	actual.d = (actual.d + 2) % 4;		/* canvia totalment de sentit */
   else
-  { if (nd == 1)			/* si nomes pot en una direccio */
+  { if (nd == 1){
+				/* si nomes pot en una direccio */
   	actual.d = vd[0];			/* li assigna aquesta */
-    else				/* altrament */
+	}else				/* altrament */
     	actual.d = vd[rand() % nd];		/* segueix una dir. aleatoria */
 
 			waitS(id_sem);
@@ -104,10 +114,12 @@ int main(int n_args, const char *ll_args[])
 		 {
 			if(actual.a == '+'){
 				win_escricar(actual.f,actual.c,actual.a,INVERS);
+				win_escricar(seg.f,seg.c,'0'+(intptr_t) index,INVERS);		/* redibuixa fantasma */
 			}else{
 			win_escricar(actual.f,actual.c,actual.a,NO_INV);	/* esborra posicio anterior */
-		}
 			win_escricar(seg.f,seg.c,'0'+(intptr_t) index,NO_INV);		/* redibuixa fantasma */
+		}
+
 			actual.f = seg.f; actual.c = seg.c; actual.a = seg.a;	/* actualitza posicio */
 		}
 	 }
