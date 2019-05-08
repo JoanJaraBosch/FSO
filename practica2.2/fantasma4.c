@@ -29,18 +29,40 @@ typedef struct {		/* per un objecte (menjacocos o fantasma) */
 	char a;				/* caracter anterior en pos. actual */
 } objecte;
 
+int df[] = {-1,0,1,0};
+int dc[] = {0,-1,0,1};
+
+int prismatics(int *col_cocos, int *fil_cocos, int col_fantasma, int fil_fantasma, int dir_fantasma){
+	int retornar=0;
+ char casella = win_quincar((fil_fantasma + df[dir_fantasma]),(col_fantasma + dc[dir_fantasma]));
+	while((casella != '+') && (casella != 'C')){
+		fil_fantasma=fil_fantasma + df[dir_fantasma];
+		col_fantasma=col_fantasma + dc[dir_fantasma];
+		casella = win_quincar((fil_fantasma + df[dir_fantasma]),(col_fantasma + dc[dir_fantasma]));
+	}
+
+	if(casella=='C'){
+		retornar=1;
+		*col_cocos=col_fantasma;
+		*fil_cocos=fil_fantasma;
+	}else{
+			retornar=0;
+	}
+	return retornar;
+}
+
 int main(int n_args, const char *ll_args[])
 {
 
-	char missatge[80], resposta[80], vistcocos[80];
-	sprintf(vistcocos, "el cocos ha estat vist");
+	int index_bustia, colm,film;
+	char missatge[20], resposta[25], vistcocos[25], novistcocos[25];
+	sprintf(vistcocos, "el cocos ha estat vistist");
+	sprintf(novistcocos, "el cocos no ha estat vist");
 	intptr_t *map_fi1 , *map_fi2, *map_camp, *map_xocs;
 	int *map_bustia;
 	int midaCamp, id_sem, fi1, fi2, xocs, nfil, ncol, retard, index, id_bustia_mem;
   int k, vk, nd, vd[3];
 	objecte seg, actual;
-	int df[] = {-1,0,1,0};
-	int dc[] = {0,-1,0,1};
 
 	int n_threads = atoi(ll_args[15]);
 	fi1 = atoi(ll_args[2]);
@@ -74,11 +96,54 @@ int main(int n_args, const char *ll_args[])
 
 	win_set(map_camp,nfil,ncol);
 	srand(getpid());
-	int vist = 0;
+	int vist = 0, activat=0;
 	int jo = 0;
-
+/*
+	FILE* fitxer;
+	char nom[30];
+	char frase[100];
+	sprintf(nom, "bustia%i.txt",index);
+	fitxer = fopen(nom,"a");
+	*/
 	while (!(*map_fi1) && !(*map_fi2)){
 			nd = 0;
+			waitS(id_sem);
+			vist = prismatics(&colm, &film, actual.c,actual.f,actual.d);
+			//sprintf(frase,"Ha vist: %i \n",vist);
+		//	fputs(frase, fitxer);
+			if(vist==1){
+				for(index_bustia=0; index_bustia<	n_threads;index_bustia++ ){
+					sendM(map_bustia[index_bustia], vistcocos, 25);
+				}
+				activat=1;
+			}else{
+				if(vist==0 && activat==1){
+					for(index_bustia=0; index_bustia<	n_threads;index_bustia++ ){
+						sendM(map_bustia[index_bustia], novistcocos, 25);
+					}
+					activat=0;
+				}
+			}
+
+			sendM(map_bustia[index], missatge, 2);
+			signalS(id_sem);
+			while(jo == 0){
+				receiveM(map_bustia[index], resposta);
+			//	sprintf(frase,"He llegit: %s \n",resposta);
+		//		fputs(frase, fitxer);
+				if(strcmp(missatge, resposta) == 0){
+					jo=1;
+				}else{
+					if(strcmp(vistcocos, resposta) == 0){
+						vist=1;
+					}else{
+						if(strcmp(novistcocos, resposta) == 0){
+							vist=0;
+						}
+					}
+				}
+			}
+			jo=0;
   for (k=-1; k<=1; k++)		/* provar direccio actual i dir. veines */
   {
     vk = (actual.d + k) % 4;		/* direccio veina */
@@ -137,26 +202,8 @@ int main(int n_args, const char *ll_args[])
 		 signalS(id_sem);
     if (actual.a == 'C') *map_fi2 = 1;		/* ha capturat menjacocos */
   }
-	waitS(id_sem);
-	int k;
-	for(k=0; k<	n_threads;k++ ){
-		sendM(map_bustia[k], vistcocos, 22);
-	}
-
-	sendM(map_bustia[index], missatge, 2);
-	signalS(id_sem);
-	while(jo == 0){
-		receiveM(map_bustia[index], resposta);
-		if(strcmp(missatge, resposta) == 0){
-			jo=1;
-		}else{
-			if(strcmp(vistcocos, resposta) == 0){
-				vist=1;
-			}
-		}
-	}
-	jo=0;
 	win_retard(retard*2);
-   }
+}
+//fclose(fitxer);
   return(0);
 }
