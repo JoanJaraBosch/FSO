@@ -106,6 +106,23 @@ int main(int n_args, const char *ll_args[])
 			filaa=film;
 			if(vist==1){
 				sprintf(missatge, "%i %i %i ",vist,colm, film);
+				if(fabs(actual.c-columnaa)>fabs(actual.f-filaa)){
+					if((actual.c-columnaa)>=0){
+						direccio=1;
+					}else{
+						if((actual.c-columnaa)<0){
+							direccio=3;
+						}
+					}
+				}else{
+					if((actual.f-filaa)>0){
+						direccio=0;
+					}else{
+						if((actual.f-filaa)<0){
+							direccio=2;
+						}
+					}
+				}
 				for(index_bustia=0; index_bustia<	n_threads;index_bustia++ ){
 					sendM(map_bustia[index_bustia], missatge, 10);
 				}
@@ -129,7 +146,7 @@ int main(int n_args, const char *ll_args[])
 					if(envioo==0){
 						vist=0;
 					}else{
-						if(envioo==1){
+						if(envioo==1 && activat==0){
 							vist=1;
 							if(fabs(actual.c-columnaa)>fabs(actual.f-filaa)){
 								if((actual.c-columnaa)>=0){
@@ -168,7 +185,7 @@ int main(int n_args, const char *ll_args[])
     { vd[nd] = vk;			/* memoritza com a direccio possible */
       nd++;
     }else{
-			if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a== '+')) && (vist==1) && (nfil-2>seg.f) && (0<seg.f) && (ncol-2>seg.c) && (0<seg.c))
+			if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a== '+')) && (vist==1) && (nfil-1>seg.f) && (0<seg.f) && (ncol-1>seg.c) && (0<seg.c))
 	    { vd[nd] = vk;			/* memoritza com a direccio possible */
 	      nd++;
 	    }
@@ -197,7 +214,6 @@ int main(int n_args, const char *ll_args[])
 				actual.d = direccio;
 				seg.f = actual.f + df[direccio];  /* calcular seguent posicio final */
 	  		seg.c = actual.c + dc[direccio];
-				seg.a=win_quincar(seg.f,seg.c);
 			}
 
     seg.a = win_quincar(seg.f,seg.c);	/* calcular caracter seguent posicio */
@@ -211,7 +227,7 @@ int main(int n_args, const char *ll_args[])
     win_escricar(seg.f,seg.c,'0'+(intptr_t) index,NO_INV);		/* redibuixa fantasma */
 		 actual.f = seg.f; actual.c = seg.c; actual.a = seg.a;	/* actualitza posicio */
 	 }else{
-		 if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a=='+')) && (vist==1)&& (nfil-2>seg.f) && (0<seg.f) && (ncol-2>seg.c) && (0<seg.c))
+		 if (((seg.a==' ') || (seg.a=='.') || (seg.a=='C') || (seg.a=='+')) && (vist==1)&& (nfil-1>seg.f) && (0<seg.f) && (ncol-1>seg.c) && (0<seg.c))
 		 {
 			if(actual.a == '+'){
 				win_escricar(actual.f,actual.c,actual.a,INVERS);
