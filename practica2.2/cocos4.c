@@ -373,6 +373,8 @@ int main(int n_args, const char *ll_args[])
 		sprintf(a7,"%i",f1.c);
 
     int i, n=0;
+		pthread_t coco;
+		pthread_create(&coco, NULL,mou_menjacocos, NULL);
 		time(&t_ini);
 		for(i=0;i<n_threads;i++){
 			tpid[n] = fork(); /* crea un nou proces */
@@ -385,8 +387,7 @@ int main(int n_args, const char *ll_args[])
 			}else if (tpid[n] > 0) n++;
 		}
 
-	pthread_t coco;
-	pthread_create(&coco, NULL,mou_menjacocos, NULL);
+
 
 while(! (*map_fi1) && ! (*map_fi2)){
 	win_update();
